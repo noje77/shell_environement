@@ -1,0 +1,296 @@
+#!/bin/bash
+# bash_dirstack_plus - friendly, persistent 'cd' stack
+#
+#
+# Repository: https://github.com/Boruch-Baum/bash_dirstack_plus
+# Author:     Boruch Baum <boruch_baum@gmx.com>
+# License:    GPL3+
+#
+#
+# Synopsis:
+#
+#   dirs
+#
+#   [pushd|pu] [= ] path/to/dir
+#              n
+#              [= ] substring
+#
+#   [popd|po] n ...
+#
+#
+# Description:
+#
+#   This file offers three wrapper functions for bash builtin commands
+#   `dirs', `pushd', and `popd', in order to make them easier to use,
+#   and in order to extend their features to include persistence
+#   across sessions, removal of duplicate entries, substring
+#   searching, and multiple stacks.
+#
+#
+# Installation:
+#
+#   From either the command line, or from file .bashrc:
+#
+#     source path/to/this/file
+#
+#
+# Uninstallation:
+#
+#     unalias dirs pushd pu popd pu
+#     unset -f dirs_wrapper_function pushd_wrapper_function popd_wrapper_function
+#     unset -f __load_dir_stack_history __update_dir_stack_history
+#
+#
+# Discussion:
+#
+#   Bash automatically keeps track of a session's prior directory, so
+#   that one can easily refer to it ($OLD_PWD) or navigate back to it
+#   (`cd -'). Additionally, bash offers tools to allow the user to
+#   manually store and refer to a list of directories, which bash
+#   calls its DIRSTACK. Bash offers a `dirs' command to view the
+#   stack, and commands `pushd' and `popd' to maninpulate it and to
+#   navigate to its elements. Though these features sound very useful
+#   to any user of the command-line, this writer observed and
+#   experienced that these features are rarely used, and attributes
+#   that to how the commands were implemented (if you haven't yet, try
+#   using them). The wrapper functions of this file aim to fix that.
+#
+#
+#   dirs
+#
+#     Displays entries of the stack in a vertical list, with the stack
+#     entry number alongside each entry. Unlike the native builin, the
+#     current directory information is not presented as item zero.
+#
+#   pushd (aliased to pu)
+#
+#     [pushd|pu] [= ] path/to/dir
+#                n
+#                [= ] substring
+#
+#     Performs a change directory operation, either to a directory
+#     already on the stack, or to a new directory which is added to
+#     the stack if it is not already there. This command also displays
+#     the stack, unless environment variable PUSHD_SILENT is set.
+#
+#     In the first form, a directory is added to the stack. In the
+#     event that the directory is a number, which could be
+#     mis-interpreted as a request to navigate to a current entry on
+#     the stack, precede the directoy path with `= '.
+#
+#     In the second form, navigate to stack element N.
+#
+#     In the third form, navigate to the first stack element that
+#     contains the substring SUBSTRING. If the substring is a
+#     number, which could be mis-interpreted as a request to navigate
+#     to a current entry on the stack, precede the directoy path with
+#     `= '.
+#
+#   popd (aliased to po)
+#
+#     [popd|po] n ...
+#
+#     Removes entries from directory stack. Accepts a space-delimited
+#     list of numbers. Does NOT navigate directories.
+#
+#
+# Environment variables:
+#
+#   DIRSTACK_HISTFILE
+#
+#     Default value:  ${HOME}/.cache/bash_dirstack_history
+#
+#     The name of a file which stores the persistent copy of the bash
+#     directory stack, shared among all of the user's concurrent
+#     terminal sessions. Thus, when one adds or removes an entry in
+#     one terminal session, the modification to the stack is
+#     immediately available to all of that user's other terminal
+#     sessions. Duplicate entries are not kept.
+#
+#     Manipulating this variable and the underlying file to which it
+#     refers allows the user to create and switch between multiple
+#     directory stacks. Thus, a user with multiple independent bash
+#     processes open can have several using some stack A while others
+#     use some other stack B.
+#
+#   PUSHD_SILENT
+#
+#     When set, pushd does not diplay the elements of the stack.
+#
+#
+#
+# ©2018 Boruch Baum <boruch_baum@gmx.com>
+#
+#
+DIRSTACK_HISTFILE="${DIRSTACK_HISTFILE:=${HOME}/.config/bash_dirstack_history}"
+#
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# __load_dir_stack_history
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# This function uses bash associative arrays to eliminate
+# duplicate DIRSTACK entries that accumulated during the
+# prior bash session
+# used by bash functions {dirs,pushd}_wrapper_function
+function __load_dir_stack_history()
+{
+  if [ ! -f ${DIRSTACK_HISTFILE} ] ; then
+     return
+  fi
+  builtin dirs -c   # Clear the pre-existing stack
+  declare -A file_entry_to_add
+  while read -r ; do
+     [ "${REPLY}" ] && file_entry_to_add+=([${REPLY}]=1)
+  done < ${DIRSTACK_HISTFILE}
+  [ "${REPLY}" ] && file_entry_to_add+=([${REPLY}]=1)
+  local i=0
+  for i in "${!file_entry_to_add[@]}"
+  do
+     builtin pushd -n "$i" >/dev/null
+  done
+}
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# END_OF_FUNCTION: __load_dir_stack_history
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# __update_dir_stack_history
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#   maintain dirstack persistence and sharing across
+#   terminal emulator sessions
+#   used by bash functions {dirs,pushd,popd}_wrapper_function
+function __update_dir_stack_history()
+{
+  local accum
+  if [ ! -d ${DIRSTACK_HISTFILE%/*} ] ; then
+     mkdir -p ${DIRSTACK_HISTFILE%/*}
+  fi
+  for (( i=0; i<${#DIRSTACK[*]}; i++)) ; do
+     [[ "${DIRSTACK[${i}]}" != "${DIRSTACK[${i}+1]}" ]] || \
+     [[ $i == ${#DIRSTACK[*]}-1 ]]          && \
+     [[ "${DIRSTACK[${i}]}" != "${HOME}" ]] && \
+     [[ "${DIRSTACK[${i}]}" != "~" ]]       && \
+     accum="$accum\n${DIRSTACK[${i}]/#~/${HOME}}"
+  done
+  echo -e "$accum" > ${DIRSTACK_HISTFILE}
+}
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# END_OF_FUNCTION: __update_dir_stack_history
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# dirs_wrapper_function
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function dirs_wrapper_function {
+# docstring=Session-persistent dirstack with vertical display.
+  __load_dir_stack_history
+  builtin dirs -v | tail -n+2
+}
+alias dirs="dirs_wrapper_function "
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# END_OF_FUNCTION: dirs_wrapper_function
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# pushd_wrapper_function
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function pushd_wrapper_function {
+# docstring=Session-persistent and sharable dirstack.
+#   =  for pushing a numeric directory onto stack
+#   number for cd
+#   substring for cd to first match on stack
+# set $PUSHD_SILENT to not display new dirstack
+  if [ $# -eq 0 ] || [[ "$1" =~ ^[+-][0-9]+$ ]] ; then
+    printf "pushd wrapper.\n To cd to an existing entry, enter a number WITHOUT a sign.
+ To cd to a dir matching ^[+-]?[0-9]+, precede it with \"= \"
+ If dir does not exist, pushes to first entry with a substring match.\n\n"
+    return
+  fi
+  local prefix return_value list max
+  if [[ "$1" == "=" ]] ; then
+    shift
+  elif [[ "$1" =~ ^[0-9]+$ ]] ; then
+    list=( $(builtin dirs) )
+    max=${#list[@]}
+    if [ "$1" -le "$max" ] ; then
+      prefix="+"
+    fi
+  fi
+  if [ ! "$prefix" ] &&  [ ! -d "$1" ] ; then
+    if [ ! "$max" ] ; then
+      list=( $(builtin dirs) )
+      max=${#list[@]}
+    fi
+    local count=1
+    while [ $count -lt $max ] ; do
+      if [[ "${list[$count]}" =~ "$1" ]] ; then
+        set -- $count
+        prefix="+"
+        count=0
+        break
+      fi
+      count=$((++count))
+    done
+    if [ $count -ne 0 ] ; then
+      printf "ERROR: directory not found: %s\n" "$1"
+      return 1
+    fi
+  fi
+  builtin pushd $prefix"$1" >/dev/null
+  return_value=$?
+  __update_dir_stack_history
+  __load_dir_stack_history
+  [ ! "${PUSHD_SILENT}" ] && builtin dirs -v | tail -n+2
+  return ${return_value}
+}
+alias pushd="pushd_wrapper_function "
+alias pu="pushd_wrapper_function "
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# END_OF_FUNCTION: pushd_wrapper_function
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# popd_wrapper_function
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# accepts multiple args to pop multiple entries
+# does not perform cd
+function popd_wrapper_function {
+# docstring=Session-persistemt and sharable dirstack.
+  local max return_value elem sorted
+  max=$(($(builtin dirs | wc -w)-1))
+  readarray -t  sorted < <( sort -r -z < <(printf "%s\0" "$@") | tr "\0" "\n" )
+  for elem in "${sorted[@]}" ; do
+    if [[ "$elem" =~ ^[+-]  ]] ; then
+      printf "popd wrapper. Enter number(s) WITHOUT sign(s).\nNote: this wrapper does not change directory!\n\n"
+      return_value=1
+      break
+    elif ! [[ "$elem" =~ ^[[:digit:]]+$ ]] ; then
+      printf "ERROR: non-numeric argument: \"%s\"\n" "$elem"
+      return_value=1
+      break
+    elif [ $elem -gt $max ] ; then
+      printf "ERROR: argument out of bounds: \"%d (max is %d)\"\n" $elem $max
+      return_value=1
+      break
+    fi
+  done
+  [ ${return_value} ] && return
+  for elem in "${sorted[@]}" ; do
+    builtin popd +$elem >/dev/null
+    return_value=$?
+    [ $return_value -ne 0 ] && break
+  done
+  __update_dir_stack_history
+  [ $return_value -ne 0 ] \
+  && printf "ERROR: popd error encountered for arg: %d\n" $elem
+  builtin dirs -v | tail -n+2
+  return ${return_value}
+}
+alias popd="popd_wrapper_function "
+alias po="popd_wrapper_function "
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# END_OF_FUNCTION: popd_wrapper_function
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -1,0 +1,44 @@
+echo "cexe is not installed, do you want install it ? (quiet and detached exec from shell)" 
+echo "exec \$1 \$2 >/dev/null &" >cexe
+echo "cexe is installed." >>install.log
+echo "!! cexe is on /usr/local/bin." >>install.log
+echo "persistente dirstack is not installed, do you want install it ?" 
+echo "# bash persistent directory stack" >>~/.bashrc
+echo "export PUSHD_SILENT=1" >>~/.bashrc
+echo "source ~/.bash_dirstack_plus" >>~/.bashrc
+echo "persistent directory stack is installed." >>install.log
+echo "persistent directory stack is present on home directory." >>install.log
+echo "tmux is not installed, I will install it !"
+echo "tmux is installed." >>install.log
+echo "Password=sudo, sudo access is removed at end of script."
+ls /usr/local/bin/ | grep -qo cexe && echo "cexe is already installed." >>install.log || installcexe
+ls -a ~/ | grep -qo ".bash_dirstack_plus" && echo "persistent dirstackplus is already installed." >>install.log || dirstack ## !!! BUG !!! ici en ligne de commande parfait, mais pas en script 
+apt list --installed | egrep -qo tmux && echo "tmux is already installed." >>install.log || tmuxinstall
+echo "create or update user .tmux.conf" 
+echo "The file .tmux.conf from user directory, been created or updated see comments \"delete if needed."\" >>install.log
+echo "create or update user .vimrc" 
+echo "The file .vimrc from user directory, been created or updated see comments \"delete if needed."\" >>install.log
+echo "alias installation"
+egrep -qo "# personal alias" 	~/.bashrc && echo "alias comment already set" >>install.log || echo "# personal alias" >>~/.bashrc
+egrep -qo "hi\=history"		~/.bashrc && echo "alias hi=history already set" >>install.log || echo "alias hi=history" >>~/.bashrc
+egrep -qo "h=\"history 20\""   	~/.bashrc && echo "alias h=history already set" >>install.log || echo "alias h=\"history 20\""  >>~/.bashrc
+egrep -qo "hig=\"history" 	~/.bashrc && echo "alias hig=history already set" >>install.log || echo "alias hig=\"history | grep \$1\"" >>~/.bashrc
+egrep -qo "lh=\"ls -lh\""         ~/.bashrc && echo "alias lh=ls  already set" >>install.log || echo "alias lh=\"ls -lh\"" >>~/.bashrc
+egrep -qo "d=dirs"	  	~/.bashrc && echo "alias d=dirs already set" >>install.log || echo "alias d=dirs" >>~/.bashrc
+egrep -qo "j=jobs"	  	~/.bashrc && echo "alias j=jobs already set" >>install.log || echo "alias j=jobs" >>~/.bashrc
+egrep -qo "more\=\"less \-X \-m\"" ~/.bashrc && echo "alias less for mor already set" >>install.log || echo "alias more=\"less -X -m\"" >>~/.bashrc
+egrep -qo "calc\=\"bc \-l\""     ~/.bashrc && echo "alias bc for clac already set" >>install.log || echo "alias calc=\"bc -l\"" >>~/.bashrc
+egrep -qo "\-x nano"	  	~/.bashrc && echo "alias mnano already set" >>install.log || echo "alias mnano=\"mate-terminal --zoom=1.2 --full-screen --hide-menubar -x nano \$1\"" >>~/.bashrc
+egrep -qo "\-x vi"        	~/.bashrc && echo "alias mvim already set" >>install.log || echo "alias mvim=\"mate-terminal --zoom=1.2 --full-screen --hide-menubar -x vi \$1\"" >>~/.bashrc
+egrep -qo "w3mnc\=\"w3m \-no\-cookie" ~/.bashrc && echo "alias w3mnc already set" >>install.log || echo "alias w3mnc=\"w3m -no-cookie \$1\"" >>~/.bashrc
+egrep -qo "firefoxp\=\"firefox \--private-window \\$" ~/.bashrc && echo "alias firefoxp already set" >>install.log || echo "alias firefoxp=\"exec firefox --private-window \$1\"" >>~/.bashrc
+egrep -qo "say\=spd\-say"        ~/.bashrc && echo "alias say is spd-say already set" >>install.log || echo "alias say=spd-say" >>~/.bashrc
+egrep -qo "cajan\=\"caja \--no-desktop >>\/dev\/null \&\"" ~/.bashrc && echo "alias cajan already set" >>install.log || echo "alias cajan=\"caja --no-desktop >>/dev/null &\"" >>~/.bashrc 
+egrep -qo "deroff\=\"groff \-man \-Tascii \\$" ~/.bashrc && echo "alias deroff already set" >>install.log || echo "alias deroff=\"groff -man -Tascii \$1\"" >>~/.bashrc
+egrep -qo "sendmail\=\"caja-sendto \\$" ~/.bashrc && echo "alias sendmail already set" >>install.log || echo "alias sendmail=\"caja-sendto \$1\""  >>~/.bashrc
+egrep -qo "exec\=cexe"	  	~/.bashrc && echo "alias exec is cexe already set" >>install.log || echo "alias exec=cexe" >>~/.bashrc
+echo "" >>~/.bashrc
+echo "" >>~/.bashrc
+echo "see also .bashrc modification \"# bash persistent directory stack\" and \"# personal alias\"" >>install.log
+echo "read install.log file, then delete or keep and change name."
+echo "sudo right if given, is now removed"

@@ -1,0 +1,23 @@
+
+
+" <- ADDED BY "INSTALL_SHELL_ENVIRONMENT.SH" REMOVE LINES BELOW IF NEEDED ->
+
+if &term =~ '^screen'
+    " tmux will send xterm-style keys when its xterm-keys option is on
+    execute "set <xUp>=\e[1;*A"
+    execute "set <xDown>=\e[1;*B"
+    execute "set <xRight>=\e[1;*C"
+    execute "set <xLeft>=\e[1;*D"
+endif
+
+set number
+set complete+=k
+set number
+set hidden 
+set statusline=[%n]\ %<%F\ \ \ \ \ %=\ line:%l/%L\ col:%c\ \ \ %p%%\ \ \ %{strftime(\"%H:%M:%S\")}
+set laststatus=2
+syntax on
+
+" <- ADDED BY "INSTALL_SHELL_ENVIRONMENT.SH" REMOVE LINES ABOVE IF NEEDED ->
+
+
