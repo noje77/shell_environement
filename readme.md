@@ -1,8 +1,9 @@
 # Shell environment 
 
 ## Intoduction 
-For install my shell environement you need to run install_environement.sh 
-Bash / Ubuntu 18.04 and 20.04 tested. 
+For install my shell environement you need to run "install_environement.sh"
+
+_(Bash / Ubuntu 18.04 and 20.04 tested)._
 
 ## What this script do : 
 * install cexe "/usr/local/bin/cexe" cexe is a script put on /usr/local/bin, replace exec with an alias from .bashrc, the goal is execute gui software detached and quietly. 
