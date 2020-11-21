@@ -21,3 +21,7 @@ see install.log for check result of installation.
 IMPORTANT !! >  don't remove the directory nammed files, this is needed by install_environement.sh (files data from dirstackplus, tmux, vim). 
 
 run remove.sh for remove, bashrc need manually updated at the moment. 
+
+Original dirstack plus on github :
+https://github.com/Boruch-Baum/bash_dirstack_plus
+
