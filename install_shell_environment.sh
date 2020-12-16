@@ -61,6 +61,10 @@ echo ""
 echo ""
 sudo apt install tmux
 echo ""
+egrep -qo "exit\=\"tmux kill-window\"" ~/.bashrc && echo "exit tmux kill-window already set" >>install.log || echo "alias exit=\"tmux kill window\"" >>~/.bashrc
+cat files/tmux.conf >>~/.tmux.conf  
+echo ""
+echo "The file .tmux.conf from user directory, been created or updated see comments \"delete if needed."\" >>install.log
 echo "tmux is installed." >>install.log
 } 
 
@@ -88,12 +92,6 @@ sleep 2
 # check if tmux is installed, install if not or tell if installed. 
 apt list --installed | egrep -qo tmux && echo "tmux is already installed." >>install.log || tmuxinstall
 
-# update or create .tmux.conf. 
-echo ""
-echo "create or update user .tmux.conf" 
-cat files/tmux.conf >>~/.tmux.conf  
-echo ""
-echo "The file .tmux.conf from user directory, been created or updated see comments \"delete if needed."\" >>install.log
 
 # update or create .vimrc. 
 echo ""
@@ -125,6 +123,19 @@ egrep -qo "cajan\=\"caja \--no-desktop >>\/dev\/null \&\"" ~/.bashrc && echo "al
 egrep -qo "deroff\=\"groff \-man \-Tascii \\$" ~/.bashrc && echo "alias deroff already set" >>install.log || echo "alias deroff=\"groff -man -Tascii \$1\"" >>~/.bashrc
 egrep -qo "sendmail\=\"caja-sendto \\$" ~/.bashrc && echo "alias sendmail already set" >>install.log || echo "alias sendmail=\"caja-sendto \$1\""  >>~/.bashrc
 egrep -qo "exec\=cexe"	  	~/.bashrc && echo "alias exec is cexe already set" >>install.log || echo "alias exec=cexe" >>~/.bashrc
+echo "PS1='\${debian_chroot:+(\$debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\ [\j]$ '" >>~/.bashrc 
+
+# install matt "mate terminal title" 
+touch matt
+echo "# matt.sh mate-terminal title \"matt\"" >matt
+echo "echo" >>matt
+echo "read -p \"titre du terminal : \" title" >>matt 
+echo "echo" >>matt
+echo "mate-terminal --title=\"\$title\" -x tmux &" >>matt
+chmod 755 matt
+sudo mv matt /usr/local/bin
+echo "matt is right installed on /usr/local/bin" >>install.log
+
 
 # make space 
 echo "" >>~/.bashrc

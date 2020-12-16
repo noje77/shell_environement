@@ -15,6 +15,7 @@ Tested on :
 * install my personal aliases, look at .bashrc for see them and see what they do.
 * make or change .vimrc, check the modification.
 * install .tmux.conf "check the modification.
+* install matt "mate-terminal title set" 
 
 see install.log for check result of installation.
 

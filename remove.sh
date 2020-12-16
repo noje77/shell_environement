@@ -1,6 +1,7 @@
 #!/usr/bin/env bash 
 
 sudo rm /usr/local/bin/cexe
+sudo rm /usr/local/bin/matt
 sudo rm ~/.tmux.conf
 sudo rm ~/.vimrc
 sudo rm ~/.bash_dirstack_plus
